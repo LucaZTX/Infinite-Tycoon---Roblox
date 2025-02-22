@@ -1,3 +1,5 @@
+--  LucaZTX
+
 local player = game.Players.LocalPlayer
 local cratesFolder = workspace:FindFirstChild("CrateFolder")
 local keysFolder = workspace:FindFirstChild("KeyFolder")
@@ -10,7 +12,6 @@ end
 local teleportEnabled = false -- Estado del TP
 local running = false -- Para evitar múltiples loops al activarlo
 local rootPart = nil -- Se actualizará dinámicamente
-local screenGui = nil -- Guardamos la UI para no recrearla varias veces
 
 -- 🔄 Función para obtener el HumanoidRootPart
 local function updateCharacter()
@@ -18,34 +19,17 @@ local function updateCharacter()
     rootPart = character:WaitForChild("HumanoidRootPart") -- Espera a que cargue el nuevo rootPart
 end
 
--- 🖥️ Crear UI (persistente)
-local function createUI()
-    -- Si la UI ya existe, no la vuelve a crear
-    if screenGui then return end
+-- 🖥️ Crear UI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = player:WaitForChild("PlayerGui")
 
-    screenGui = Instance.new("ScreenGui")
-    screenGui.ResetOnSpawn = false -- 🔥 Hace que la UI NO desaparezca al morir
-    screenGui.Parent = player:WaitForChild("PlayerGui")
-
-    local button = Instance.new("TextButton")
-    button.Parent = screenGui
-    button.Size = UDim2.new(0, 150, 0, 50)
-    button.Position = UDim2.new(0.05, 0, 0.1, 0) -- Ajusta la posición
-    button.Text = "TP: OFF"
-    button.BackgroundColor3 = Color3.fromRGB(255, 0, 0) -- Rojo (apagado)
-    button.TextScaled = true
-
-    -- 🔘 Toggle al tocar el botón
-    button.MouseButton1Click:Connect(function()
-        teleportEnabled = not teleportEnabled
-        button.Text = teleportEnabled and "TP: ON" or "TP: OFF"
-        button.BackgroundColor3 = teleportEnabled and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0) -- Verde o Rojo
-
-        if teleportEnabled and not running then
-            task.spawn(teleportLoop) -- 🔥 Inicia el TP en un nuevo hilo
-        end
-    end)
-end
+local button = Instance.new("TextButton")
+button.Parent = screenGui
+button.Size = UDim2.new(0, 150, 0, 50)
+button.Position = UDim2.new(0.05, 0, 0.1, 0) -- Ajusta la posición
+button.Text = "TP: OFF"
+button.BackgroundColor3 = Color3.fromRGB(255, 0, 0) -- Rojo (apagado)
+button.TextScaled = true
 
 -- 🚀 Función del TP
 local function teleportLoop()
@@ -80,12 +64,19 @@ local function teleportLoop()
     running = false
 end
 
--- 🛠️ Detectar cuando el personaje reaparece
-player.CharacterAdded:Connect(function()
-    updateCharacter()
-    createUI() -- 🔥 Re-crea la UI solo si no existe
+-- 🔘 Toggle al tocar el botón
+button.MouseButton1Click:Connect(function()
+    teleportEnabled = not teleportEnabled
+    button.Text = teleportEnabled and "TP: ON" or "TP: OFF"
+    button.BackgroundColor3 = teleportEnabled and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0) -- Verde o Rojo
+
+    if teleportEnabled and not running then
+        task.spawn(teleportLoop) -- 🔥 Inicia el TP en un nuevo hilo
+    end
 end)
 
--- 🔄 Inicialización
+-- 🛠️ Detectar cuando el personaje reaparece
+player.CharacterAdded:Connect(updateCharacter)
+
+-- 🔄 Llamar a la función al inicio
 updateCharacter()
-createUI()
